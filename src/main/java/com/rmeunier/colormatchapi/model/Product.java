@@ -1,32 +1,17 @@
 package com.rmeunier.colormatchapi.model;
 
-import com.sun.istack.NotNull;
-import com.vladmihalcea.hibernate.type.array.IntArrayType;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
-
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Arrays;
-import java.util.List;
 
 @Entity
 @Table(name = "product",
         indexes = @Index(columnList = "id"))
-@TypeDefs({
-        @TypeDef(
-                name = "int-array",
-                typeClass = IntArrayType.class
-        )
-})
 public class Product {
 
     @Id
-    @NotNull
     @Column(name = "id", length = 20, nullable = false)
     private String id;
 
-    @NotNull
     @Column(name = "title", length = 100, nullable = false)
     private String title;
 
@@ -46,7 +31,7 @@ public class Product {
     @Column(length = 200)
     private String url;
 
-    @Type(type = "int-array")
+    // Hibernate maps int[] to a PostgreSQL array natively
     @Column(name = "dominant_color",
             columnDefinition = "integer[]")
     private int[] dominantColor;

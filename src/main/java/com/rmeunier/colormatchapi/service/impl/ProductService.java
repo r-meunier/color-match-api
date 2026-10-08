@@ -13,16 +13,17 @@ import com.rmeunier.colormatchapi.service.IVisionService;
 import org.apache.commons.lang3.EnumUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
-import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
+import org.springframework.batch.core.job.parameters.JobParameters;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -44,11 +45,14 @@ public class ProductService implements IProductService {
     private ColorProximity colorProximity;
 
     @Autowired
-    private JobLauncher jobLauncher;
+    private JobOperator jobOperator;
 
+    // Lazy, as the jobs' item processors depend on this service in turn
+    @Lazy
     @Autowired
     private Job importProductJob;
 
+    @Lazy
     @Autowired
     private Job domColorJob;
 
@@ -104,9 +108,9 @@ public class ProductService implements IProductService {
                     .addLong("batchJobId", System.currentTimeMillis())
                     .addString("filePath", filePath)
                     .toJobParameters();
-            jobLauncher.run(importProductJob, jobParameters);
+            jobOperator.start(importProductJob, jobParameters);
         } catch (JobExecutionAlreadyRunningException | JobRestartException
-                | JobInstanceAlreadyCompleteException | JobParametersInvalidException e) {
+                | JobInstanceAlreadyCompleteException | InvalidJobParametersException e) {
             LOGGER.error("Batch import could not be started! Error: {}", e.getMessage());
         }
     }
@@ -191,9 +195,9 @@ public class ProductService implements IProductService {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addLong("domColorBatchJobId", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(domColorJob, jobParameters);
+            jobOperator.start(domColorJob, jobParameters);
         } catch (JobExecutionAlreadyRunningException | JobRestartException
-                | JobInstanceAlreadyCompleteException | JobParametersInvalidException e) {
+                | JobInstanceAlreadyCompleteException | InvalidJobParametersException e) {
             LOGGER.error("Batch processing dominant colors could not be started! Error: {}", e.getMessage());
         }
     }

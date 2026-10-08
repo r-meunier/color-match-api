@@ -4,15 +4,15 @@ import com.rmeunier.colormatchapi.dao.ProductRepository;
 import com.rmeunier.colormatchapi.model.Product;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.item.data.RepositoryItemReader;
-import org.springframework.batch.item.data.RepositoryItemWriter;
-import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.Step;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.infrastructure.item.data.RepositoryItemReader;
+import org.springframework.batch.infrastructure.item.data.RepositoryItemWriter;
+import org.springframework.batch.infrastructure.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,9 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,19 +31,13 @@ public class DomColorJobBatchConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(DomColorJobBatchConfiguration.class);
 
     @Autowired
-    public JobBuilderFactory jobBuilderFactory;
+    private JobRepository jobRepository;
 
     @Autowired
-    public StepBuilderFactory stepBuilderFactory;
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private ProductRepository productRepository;
-
-    @Autowired
-    private RepositoryItemWriter<Product> databaseWriter;
-
-    @Autowired
-    private DataSource dataSource;
 
     @Autowired
     @Qualifier("taskExecutor")
@@ -55,8 +48,7 @@ public class DomColorJobBatchConfiguration {
 
     @Bean
     public Job domColorJob(DomColorJobCompletionNotificationListener listener, Step domColorStep1) {
-        return jobBuilderFactory.get("domColorJob")
-                .incrementer(new RunIdIncrementer())
+        return new JobBuilder("domColorJob", jobRepository)
                 .listener(listener)
                 .start(domColorStep1)
                 .build();
@@ -79,7 +71,6 @@ public class DomColorJobBatchConfiguration {
         Map<String, Sort.Direction> sorts = new HashMap<>();
         sorts.put("id", Sort.Direction.ASC);
         return new RepositoryItemReaderBuilder<Product>()
-                .name("productItemDbReader")
                 .repository(productRepository)
                 .methodName("findAll")
                 .pageSize(100)
@@ -109,9 +100,10 @@ public class DomColorJobBatchConfiguration {
      * @return the Step object
      */
     @Bean
-    public Step domColorStep1(RepositoryItemWriter<Product> databaseWriter) throws IOException {
-        return stepBuilderFactory.get("domColorStep1")
+    public Step domColorStep1(RepositoryItemWriter<Product> databaseWriter) {
+        return new StepBuilder("domColorStep1", jobRepository)
                 .<Product, Product> chunk(chunkSize)
+                .transactionManager(transactionManager)
                 .reader(databaseReader())
                 .processor(processor())
                 .writer(databaseWriter)

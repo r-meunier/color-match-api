@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.job.parameters.JobParameters;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,7 +132,7 @@ class ItemProcessorsTest {
         @Test
         void rejectsMissingFilePath() {
             assertThatThrownBy(() -> validator.validate(new JobParameters()))
-                    .isInstanceOf(JobParametersInvalidException.class);
+                    .isInstanceOf(InvalidJobParametersException.class);
         }
 
         @Test
@@ -140,7 +140,7 @@ class ItemProcessorsTest {
             JobParameters parameters = new JobParametersBuilder().addString("filePath", "").toJobParameters();
 
             assertThatThrownBy(() -> validator.validate(parameters))
-                    .isInstanceOf(JobParametersInvalidException.class);
+                    .isInstanceOf(InvalidJobParametersException.class);
         }
     }
 }
