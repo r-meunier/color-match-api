@@ -1,5 +1,5 @@
 """
-Generates a CSV of fake products in the same format as products_attraqt_test_technique.csv,
+Generates a CSV of fake products in the same format as products_lacoste_sample.csv,
 used for testing the import job with large data sets.
 
 Usage:
@@ -46,7 +46,7 @@ def datagenerate(records, output, seed):
             writer.writerow({
                     "id" : fake.bothify('??###-##-?#?', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'),
                     "title" : 'Polo ' + fake.word() + ' ' + fake.word(),
-                    "gender_id": fake.random_element(elements=('MAN', 'WOM', 'BOY', 'GIR')),
+                    "gender_id": fake.random_element(elements=('MAN', 'WOM', 'BOY', 'GIR', 'UNI')),
                     "composition" : composition,
                     "sleeve" : sleeve,
                     "photo": fake.file_path(depth=3, extension='jpg'),
