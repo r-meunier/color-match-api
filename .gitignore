@@ -35,6 +35,7 @@ build/
 
 ### Other
 /secrets/
+/final_backup*.sql
 /docker/res/*.json
 /docker/res/Fake_Product_data*.csv
 !/docker/res/Fake_Product_data_200k.csv
