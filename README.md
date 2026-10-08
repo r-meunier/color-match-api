@@ -1,5 +1,7 @@
 # Color Match API
 
+[![CI](https://github.com/r-meunier/color-match-api/actions/workflows/ci.yml/badge.svg)](https://github.com/r-meunier/color-match-api/actions/workflows/ci.yml)
+
 This project was built as a recruitement project.
 
 This is an API designed to handle products with belonging dominant colors. It is used to retrieve products that have a 
@@ -230,6 +232,13 @@ This will initialize the database and the server and start up the application.
 
 After this, you can use the REST API to import a products list and perform actions on it. I have used Postman
 to test the endpoints.
+
+### Running the tests
+
+`./mvnw test` runs the unit and integration tests. The integration tests start a PostgreSQL container with
+[Testcontainers](https://testcontainers.com/) and import the Lacoste sample catalogue, so they need Docker running;
+without Docker they are skipped. The Google Vision API is replaced by a fake in the tests, so no credentials are needed.
+The project is currently built and tested with JDK 17.
 
 ### Backup data, restoration
 
