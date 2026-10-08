@@ -36,3 +36,5 @@ build/
 ### Other
 /secrets/
 /docker/res/*.json
+/docker/res/Fake_Product_data*.csv
+!/docker/res/Fake_Product_data_200k.csv
