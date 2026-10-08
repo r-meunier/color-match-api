@@ -14,10 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.parameters.JobParameters;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
@@ -44,7 +44,7 @@ class ProductServiceTest {
     private IVisionService visionService;
 
     @Mock
-    private JobLauncher jobLauncher;
+    private JobOperator jobOperator;
 
     @Mock
     private Job importProductJob;
@@ -58,7 +58,7 @@ class ProductServiceTest {
     void setUp() {
         productService = new ProductService(productRepository, visionService);
         ReflectionTestUtils.setField(productService, "colorProximity", new ColorProximity());
-        ReflectionTestUtils.setField(productService, "jobLauncher", jobLauncher);
+        ReflectionTestUtils.setField(productService, "jobOperator", jobOperator);
         ReflectionTestUtils.setField(productService, "importProductJob", importProductJob);
         ReflectionTestUtils.setField(productService, "domColorJob", domColorJob);
     }
@@ -188,14 +188,14 @@ class ProductServiceTest {
         productService.importProductsFromFilePath("/data/products.csv");
 
         ArgumentCaptor<JobParameters> captor = ArgumentCaptor.forClass(JobParameters.class);
-        verify(jobLauncher).run(eq(importProductJob), captor.capture());
+        verify(jobOperator).start(eq(importProductJob), captor.capture());
         assertThat(captor.getValue().getString("filePath")).isEqualTo("/data/products.csv");
         assertThat(captor.getValue().getLong("batchJobId")).isPositive();
     }
 
     @Test
     void importProductsSwallowsJobLaunchErrors() throws Exception {
-        when(jobLauncher.run(eq(importProductJob), any()))
+        when(jobOperator.start(eq(importProductJob), any()))
                 .thenThrow(new JobInstanceAlreadyCompleteException("already done"));
 
         assertThatCode(() -> productService.importProductsFromFilePath("/data/products.csv"))
@@ -206,6 +206,6 @@ class ProductServiceTest {
     void findDominantColorForAllProductsStartsDomColorJob() throws Exception {
         productService.findDominantColorForAllProducts();
 
-        verify(jobLauncher).run(eq(domColorJob), any(JobParameters.class));
+        verify(jobOperator).start(eq(domColorJob), any(JobParameters.class));
     }
 }

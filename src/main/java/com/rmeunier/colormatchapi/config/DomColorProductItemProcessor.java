@@ -5,7 +5,7 @@ import com.rmeunier.colormatchapi.model.Product;
 import com.rmeunier.colormatchapi.service.IProductService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class DomColorProductItemProcessor implements ItemProcessor<Product, Product> {

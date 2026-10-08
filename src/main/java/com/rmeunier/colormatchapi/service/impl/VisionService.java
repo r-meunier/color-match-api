@@ -9,7 +9,7 @@ import com.rmeunier.colormatchapi.service.IVisionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.gcp.vision.CloudVisionTemplate;
+import com.google.cloud.spring.vision.CloudVisionTemplate;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -106,13 +107,13 @@ public class VisionService implements IVisionService {
         InputStreamResource imgResource = null;
 
         try {
-            URL url = new URL(fullFilePath);
+            URL url = URI.create(fullFilePath).toURL();
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             InputStream in = conn.getInputStream();
 
             imgResource = new InputStreamResource(in);
 
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             LOGGER.error("Error occurred loading the image resource... Error: {}", e.getMessage());
         }
 

@@ -1,0 +1,9 @@
+# Only the Maven wrapper, pom.xml and src/ are needed to build the image
+.git
+.github
+.idea
+target
+secrets
+docker
+*.sql
+.env
