@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -10,7 +8,8 @@ services:
       - "8787:8787"
       - "5005:5005"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -20,24 +19,33 @@ services:
       - DOCKER_FILE_RES_DIR=${DOCKER_FILE_RES_DIR}
       - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_credentials
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    volumes:
+      # CSV files to import, read-only
+      - "./docker/res:${DOCKER_FILE_RES_DIR:-/usr/api-service/res}:ro"
     secrets:
       - gcp_credentials
 
   db:
-    image: postgres:13.4
+    image: postgres:18
     container_name: db
     restart: always
     volumes:
-      - "db-data:/var/lib/postgresql/data"
+      # Since PostgreSQL 18 the image stores its data in a version-specific subdirectory of /var/lib/postgresql
+      - "pgdata:/var/lib/postgresql"
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  db-data:
+  pgdata:
 
 secrets:
   gcp_credentials:

@@ -53,7 +53,7 @@ class ColorMatchApiIntegrationTest {
     private static final int SAMPLE_SIZE = 499;
 
     @Container
-    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:13.4");
+    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {

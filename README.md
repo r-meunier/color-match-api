@@ -52,7 +52,8 @@ larger volumes. It was generated with `docker/res/fake_data_generator.py`, which
 
 ## Tech and details of the application
 
-The application uses Java 11 with Spring Boot, to create a RESTful API to manage product colors.
+The application uses Java 25 with Spring Boot 4 and Spring Batch 6, to create a RESTful API to manage product colors.
+(It was originally written in 2021 with Java 11 and Spring Boot 2.4, and upgraded in 2026.)
 It uses a PostgreSQL database as PostgreSQL is a great choice for dealing with CSV files and I found that I could map
 the required values the best with this database (it also supports arrays).
 The application also uses Docker to connect the server to the database in the same container, for easier management
@@ -90,6 +91,11 @@ This is drastically better than a simple single-threaded implementation. I also 
 but a multi-threaded implementation implies that the Batch Job cannot be restarted. If a job fails,
 it will not be able to pick up from where it left off. As a solution, Spring Batch could be replaced with better
 alternatives, such as Apache Spark.
+
+Since the upgrade to Spring Batch 6, the step uses the new chunk-oriented step model: the items of a chunk are processed
+concurrently, but chunks are read and written one after the other. This is safer, as the CSV reader is not thread-safe,
+but slower: importing the 200000 generated items took about 1m 52s in Docker after the upgrade. Partitioning the file
+would bring back parallel reading and writing.
 
 ### Part II
 
@@ -162,7 +168,8 @@ The REST API responses could use improvements too. As I found no way to request 
 I have decided to just go with a URI-based one, this is why there's only path variables used. Custom errors could
 also be added, to avoid confusing the user.
 
-For the database, I useed a named, virtual volume storing the data, this volume is called `db-data`.
+For the database, I use a named, virtual volume storing the data, this volume is called `pgdata` (PostgreSQL 18).
+The volume used before the upgrade, `db-data`, held PostgreSQL 13 data, which PostgreSQL 18 cannot open.
 
 ### Testing
 
@@ -177,10 +184,8 @@ of ProductNotFoundException.
 4. Wrong URL in image path: does not process it, the exception is thrown to the Spring Batch configuration,
 in which the ItemProcessor filters out the record from being processed.
 
-As I was originally using field injection throughout the application, this did not allow mocking the beans. 
-I have refactored the dependency injection in the services and controller, but I did not do the tests. 
-I attempted mock testing, but it did not work quite as I'd expected it. I've tried unit and integral testing, 
-but I ended up not including them.
+In 2021 I did not include automated tests. Unit and integration tests were added in 2026,
+see [Running the tests](#running-the-tests).
 
 There might be some issues with the restarting of the Spring Batch job.
 
@@ -197,11 +202,9 @@ The Docker configuration requires some environment variables set before you can 
 Create an `.env` file in the root directory of the application, based on the `.env.example` file.
 
 Certain resources required by the application are stored in the `docker/res` directory on the host,
-which is mounted to/copied to the container to a certain path which can be changed in the environment variables.
+which is mounted read-only into the container, at a path which can be changed in the environment variables.
 This is the directory where you put the CSV file to be imported, for example.
 The environment variable for this path is `DOCKER_FILE_RES_DIR`.
-
-For now, the host directory is a fixed location, it can be changed to an environment variable if needed.
 
 **Make sure that `docker/res` contains the csv file to be imported.**
 It already contains the Lacoste sample catalogue and the generated data set, see [Sample data](#sample-data).
@@ -227,8 +230,9 @@ It will be used as the default.*
 
 After the configuration of the environment variables, you should be able to start the application.
 
-Run the application by using the `docker-compose up --build` command. 
-This will initialize the database and the server and start up the application.
+Run the application by using the `docker compose up --build` command. 
+This builds the application inside Docker (no JDK or Maven needed on the host), initializes the database and starts
+up the application once the database is ready.
 
 After this, you can use the REST API to import a products list and perform actions on it. I have used Postman
 to test the endpoints.
@@ -238,7 +242,7 @@ to test the endpoints.
 `./mvnw test` runs the unit and integration tests. The integration tests start a PostgreSQL container with
 [Testcontainers](https://testcontainers.com/) and import the Lacoste sample catalogue, so they need Docker running;
 without Docker they are skipped. The Google Vision API is replaced by a fake in the tests, so no credentials are needed.
-The project is currently built and tested with JDK 17.
+The project needs JDK 25.
 
 ### Backup data, restoration
 
@@ -246,6 +250,10 @@ I have created a backup SQL file of all the stored data and inserts in the datab
 from PostgreSQL, this SQL file can be found in the root folder, under the name `backup_inserts.sql`.
 
 This SQL file stores all the data imported from the CSV file, including the dominant colors.
+
+Note that the backup was made in 2021, with Spring Batch 4. Its `batch_*` tables use the old Spring Batch schema,
+which Spring Batch 6 cannot use, so only the `product` table is useful on the upgraded application.
+Restoring it has not been tested since the upgrade.
 
 To restore it, use the following command:
 `cat backup_inserts.sql | docker exec -it {postgres_container_id} psql -U {postgres_user}` where the 
