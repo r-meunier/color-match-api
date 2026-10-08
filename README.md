@@ -1,5 +1,7 @@
 # Color Match API
 
+[![CI](https://github.com/r-meunier/color-match-api/actions/workflows/ci.yml/badge.svg)](https://github.com/r-meunier/color-match-api/actions/workflows/ci.yml)
+
 This project was built as a recruitement project.
 
 This is an API designed to handle products with belonging dominant colors. It is used to retrieve products that have a 
