@@ -14,7 +14,7 @@ The REST API has multiple endpoints for handling the products.
 1. `/importProducts` This is an endpoint for importing the products from a CSV file.
 It takes a file path String, in simple plain text format from the Response Body.
 The format *must* include the extension of the file. The API accepts paths existing on the Docker container. Example:
-`/usr/api-service/res/products_test.csv`. 
+`/usr/api-service/res/products_lacoste_sample.csv`. 
 The path is case-sensitive and has to be exact, otherwise the Batch Job cannot run properly.
 2. `/getColor/{id}` This retrieves the dominant color stored in the database for a given product. A product id 
 is needed in the path. Example: `/getColor/PH4012-00-CNQ`
@@ -33,6 +33,20 @@ It searches the database for products that have a dominant color close to the on
 This needs a product `ID` and an `n` number for retrieving the `n` closest elements to the given product. Example:
 `/getProductsOfColor/L1212-00-132/15` will retrieve the 15 products that are closest in color to the provided 
 `L1212-00-132`.
+
+## Sample data
+
+`docker/res/products_lacoste_sample.csv` is the product catalogue that was provided with the assignment in 2021.
+It is a public snapshot of the Lacoste catalogue: 499 polo shirts from the French Lacoste website. It contains the real
+Lacoste product IDs, product names, gender, material composition and sleeve type, plus links to the public product pages
+on `www.lacoste.com` and the product images on `image1.lacoste.com`. It contains no prices, customer data or other
+private data. The links date from 2021 and may no longer resolve, which matters for the Google Vision API step, as it
+needs a reachable image.
+
+`docker/res/Fake_Product_data_200k.csv` is a generated data set in the same format, used for testing the import with
+larger volumes. It was generated with `docker/res/fake_data_generator.py`, which uses
+[Faker](https://faker.readthedocs.io/) with a French locale. Data sets of other sizes can be generated with it, e.g.
+`python docker/res/fake_data_generator.py 2000000` for 2 million products.
 
 ## Tech and details of the application
 
@@ -182,13 +196,13 @@ Create an `.env` file in the root directory of the application, based on the `.e
 
 Certain resources required by the application are stored in the `docker/res` directory on the host,
 which is mounted to/copied to the container to a certain path which can be changed in the environment variables.
-This is the directory where you put the CSV file to be imported, or the Google credentials' JSON file, for example.
+This is the directory where you put the CSV file to be imported, for example.
 The environment variable for this path is `DOCKER_FILE_RES_DIR`.
 
 For now, the host directory is a fixed location, it can be changed to an environment variable if needed.
 
 **Make sure that `docker/res` contains the csv file to be imported.**
-I have attached it as a sample.
+It already contains the Lacoste sample catalogue and the generated data set, see [Sample data](#sample-data).
 
 ### Docker environment variables
 
@@ -200,10 +214,10 @@ container's name: `db`.
 5. `DB_PASSWORD` the password for the database user.
 6. `DOCKER_FILE_RES_DIR` the path for the resource directory used in the Docker container. 
 Should not be changed by default.
-7. `GOOGLE_APPLICATION_CREDENTIALS` the JSON file containing the Google service account's credentials.
-Full path required on the Docker container, including the `.json` extension. Spring GCP automatically picks up on the
-JSON-based authentication being added.
-Example: `/usr/api-service/res/creds.json`.
+7. `GCP_CREDENTIALS_FILE` the host path to the JSON key of the Google service account. Optional, defaults to
+`./secrets/gcp-credentials.json`. The `secrets/` directory is git-ignored. The key is mounted into the container as a
+Docker secret at `/run/secrets/gcp_credentials` (not baked into the image), and `GOOGLE_APPLICATION_CREDENTIALS` is
+set to that path, which Spring GCP picks up automatically.
 
 **Normally, the PostgreSQL Docker image should automatically be configured with any username/password combination. 
 It will be used as the default.*

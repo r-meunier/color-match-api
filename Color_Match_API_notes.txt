@@ -1,0 +1,82 @@
+Notes for Color Match API:
+
+COMMENTS:
+
+- Exception handling in Controller is needed. Return proper error instead of Internal Server Error (so like on console, 
+ProductNotFoundException).
+
+- Import products: batch job restartability? if the job fails, there is no way to restart it - this is due to the multi-threaded execution.
+The performance could be improved by data partitioning or remote chunking.
+
+- Product model: ID generation is needed. Custom ID generation with regex?
+
+- findDominantColorAndSave exists because originally findDominantColor() did not contain the data persisting, as I refactored it
+for it to be used with the findDominantColorForAllProducts() function.
+
+- Refactoring getProductsOfColor(id, n) API function: the product finding could be done in the function getProductsOfColorLike() in 
+ProductService
+
+- Controller cannot use JSON inputs, as I could only "fake" JSON inputs using Maps with Strings. Normally, I would need a model.
+
+- findProductsOfClosestColor(String id, int[] color, int n) in ProductService could be done better,
+perhaps replaced also by a Batch job. Getting all the elements from the DB using the JpaRepository's findAll() method is not
+the best performing way.
+Could also use a custom SQL statement on an indexed DB to filter the data at this point (for nulls and reference item).
+
+- Could have refactored the lambda function inside from findProductsOfClosestColor() into its own separate function.
+
+- NAMING CONVENTIONS? Find/Get randomly mixed, could have used better names! Not very consistent...
+
+- I created an interface for VisionService because the implementation could be done using Google's own Vision API, instead of Spring GCP,
+or other ways as well.
+
+- I did not use an interface for ColorProximity as I see no expandability to the specific function it serves right now.
+
+- Could add overwrite switch for loading the dominant color data into DB. Implement a boolean, and then the existing values 
+could be overwritten if needed.
+
+- Add Mockito tests.
+
+----
+PART I
+- CPU and memory usage is constant for the 2 million elements in the large data set.
+- Performance improvement: Partitioning the data? // https://stackoverflow.com/questions/29107607/best-spring-batch-scaling-strategy
+- ID generation type?
+- Alternative for Batch processing: Apache Spark.
+- Steps in Spring Batch can be processed in Chunks or in Tasklets. I used Chunks because of the complexity of the job (reading, processing items). ItemReader collects items into Chunks.
+	Chunk size = commit interval.
+- Spring Batch execution time, when Single-Threaded:
+	N of Items * Item Processing Time = 1000000 * 1 ms = 1000000 ms = 1s = 16.7 mins 
+	Single-Threaded: (499 items: Step: [step1] executed in 2s776ms)
+	- Multi-Threaded: (499 items: Step: [step1] executed in 1s678ms) (chunk size: 100)
+	- 200K records:  Step: [step1] executed in 1m3s883ms
+	https://medium.com/@YounessBout/increase-spring-batch-performance-through-multithreading-b513ca90aeb5
+- Thread safety?
+- ThreadPoolTaskExecutor reuses threads!
+	
+- CONS IF MULTI THREADED: No restartability for the JOBs. If the JOB fails there is no way for it to resume. Also No order garanties for processing the items. You should account for thread safety (Example could be not using Cursor Based JDBC Item readers)
+
+PART II
+- create service account for Google Vision API.
+- DO NOT SET HIBERNATE DDL TO CREATE/CREATE-DROP, keep it on UPDATE
+- CHECK if product already has a stored dominant color, if yes, DO NOT RUN THE API!!!
+- RepositoryItemReader - paging-based reader, a better option would be a cursor-based reader. If page size > 1 then certain rows are skipped.
+	Needs higher pageSize than 1 because of better performance!
+	- The RepositoryItemReader is thread-safe.
+- Should Chunk size be different?
+- Chunk-oriented processing is better with BIG DATA SETS, than Tasklet-based one.
+- It processes records based on chunks --- chunks only get committed at the end of a chunk, thus x chunk can be lost with records inside.
+
+
+RETRIEVED ENTIRE CATALOG AT 16:37, 10.10
+app_1      | 2021-10-10 14:41:51.259  INFO 1 --- [ProductThread-2] c.r.c.config.ItemCountListener           : Summary: StepExecution: id=2018, version=10, name=domColorStep1, status=STARTED, exitStatus=EXECUTING, readCount=499, filterCount=136, writeCount=363 readSkipCount=0, writeSkipCount=0, processSkipCount=0, commitCount=9, rollbackCount=0
+app_1      | 2021-10-10 14:41:51.274  INFO 1 --- [nio-8080-exec-1] o.s.b.c.l.support.SimpleJobLauncher      : Job: [SimpleJob: [name=domColorJob]] completed with the following parameters: [{domColorBatchJobId=1633876598077}] and the following status: [COMPLETED] in 5m13s128ms
+
+
+
+
+PART III
+- Fix /importProducts endpoint to take JSON instead?
+- Add overwrite switch to loadAllProducts endpoint? (as in do not check if dom color exists)
+- FASTER reading for repository!!! Do not use findAll() method. Perhaps use specific SQL?
+

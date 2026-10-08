@@ -34,4 +34,8 @@ build/
 /.env
 
 ### Other
-/docker/res/gcp_service_account_key.json
+/secrets/
+/final_backup*.sql
+/docker/res/*.json
+/docker/res/Fake_Product_data*.csv
+!/docker/res/Fake_Product_data_200k.csv
