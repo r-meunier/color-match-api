@@ -34,4 +34,5 @@ build/
 /.env
 
 ### Other
-/docker/res/gcp_service_account_key.json
+/secrets/
+/docker/res/*.json

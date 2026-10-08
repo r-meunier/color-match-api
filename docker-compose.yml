@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   app:
@@ -18,8 +18,10 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DOCKER_FILE_RES_DIR=${DOCKER_FILE_RES_DIR}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_credentials
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    secrets:
+      - gcp_credentials
 
   db:
     image: postgres:13.4
@@ -36,3 +38,7 @@ services:
 
 volumes:
   db-data:
+
+secrets:
+  gcp_credentials:
+    file: ${GCP_CREDENTIALS_FILE:-./secrets/gcp-credentials.json}

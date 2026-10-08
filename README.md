@@ -182,7 +182,7 @@ Create an `.env` file in the root directory of the application, based on the `.e
 
 Certain resources required by the application are stored in the `docker/res` directory on the host,
 which is mounted to/copied to the container to a certain path which can be changed in the environment variables.
-This is the directory where you put the CSV file to be imported, or the Google credentials' JSON file, for example.
+This is the directory where you put the CSV file to be imported, for example.
 The environment variable for this path is `DOCKER_FILE_RES_DIR`.
 
 For now, the host directory is a fixed location, it can be changed to an environment variable if needed.
@@ -200,10 +200,10 @@ container's name: `db`.
 5. `DB_PASSWORD` the password for the database user.
 6. `DOCKER_FILE_RES_DIR` the path for the resource directory used in the Docker container. 
 Should not be changed by default.
-7. `GOOGLE_APPLICATION_CREDENTIALS` the JSON file containing the Google service account's credentials.
-Full path required on the Docker container, including the `.json` extension. Spring GCP automatically picks up on the
-JSON-based authentication being added.
-Example: `/usr/api-service/res/creds.json`.
+7. `GCP_CREDENTIALS_FILE` the host path to the JSON key of the Google service account. Optional, defaults to
+`./secrets/gcp-credentials.json`. The `secrets/` directory is git-ignored. The key is mounted into the container as a
+Docker secret at `/run/secrets/gcp_credentials` (not baked into the image), and `GOOGLE_APPLICATION_CREDENTIALS` is
+set to that path, which Spring GCP picks up automatically.
 
 **Normally, the PostgreSQL Docker image should automatically be configured with any username/password combination. 
 It will be used as the default.*
